@@ -130,6 +130,7 @@ module.exports = {
 		provision: {
 			params: {
 				id: { type: "string", optional: true },
+				zone: { type: "string", optional: true },
 				prefix: { type: "string", default: 'provision', optional: true },
 			},
 			permissions: ['teams.create'],
@@ -149,9 +150,24 @@ module.exports = {
 					numbers: true
 				})
 
+				let server = await ctx.call('v1.mysql.servers.find', {
+					query: {
+						zone: params.zone
+					}
+				}).then((res) => res.shift())
+
+				if (!server) {
+					server = await ctx.call('v1.mysql.servers.find', {}).then((res) => res.shift())
+				}
+
+
+				if (!server) {
+					throw new Error('NO MYSQL SERVER')
+				}
+
 
 				const database = await ctx.call('v1.mysql.databases.create', {
-					server: params.id || 'moqP4dQ4pwhl5793mPNl',
+					server: server.id,
 					name
 				});
 

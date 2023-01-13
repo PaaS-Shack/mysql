@@ -60,7 +60,7 @@ module.exports = {
 				type: "string",
 				required: false
 			},
-			container: {
+			zone: {
 				type: "string",
 				required: false
 			},
