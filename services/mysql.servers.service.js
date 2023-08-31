@@ -2,6 +2,7 @@
 const DbService = require("db-mixin");
 const ConfigLoader = require("config-mixin");
 const { MoleculerClientError } = require("moleculer").Errors;
+const MYSQLMixin = require('./mixins/mysql.mixins');
 
 /**
  * attachments of addons service
@@ -12,7 +13,8 @@ module.exports = {
 
 	mixins: [
 		DbService({}),
-		ConfigLoader(['mysql.**'])
+		ConfigLoader(['mysql.**']),
+		MYSQLMixin
 	],
 
 	/**

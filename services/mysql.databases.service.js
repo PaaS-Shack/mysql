@@ -2,9 +2,13 @@
 const DbService = require("db-mixin");
 const ConfigLoader = require("config-mixin");
 const { MoleculerClientError } = require("moleculer").Errors;
-const mysql = require('mysql2');
+
+
+const MYSQLMixin = require('./mixins/mysql.mixins');
+
 /**
- * attachments of addons service
+ * mysql databases service for managing mysql databases
+ * 
  */
 module.exports = {
 	name: "mysql.databases",
@@ -12,7 +16,8 @@ module.exports = {
 
 	mixins: [
 		DbService({}),
-		ConfigLoader(['mysql.**'])
+		ConfigLoader(['mysql.**']),
+		MYSQLMixin
 	],
 
 	/**
@@ -35,16 +40,16 @@ module.exports = {
 				empty: false,
 				populate: {
 					action: "v1.mysql.servers.resolve",
-					params: {
-						//fields: ["id", "online", "hostname", 'nodeID'],
-						//populate: ['network']
-					}
 				}
 			},
-
 			name: {
 				type: "string",
+				min: 3,
 				required: true
+			},
+			connectionLimit: {
+				type: "number",
+				default: 10
 			},
 		},
 
@@ -61,51 +66,81 @@ module.exports = {
 
 	actions: {
 		create: {
-			permissions: ['domains.records.create'],
+			permissions: ['mysql.databases.create'],
 		},
 		list: {
-			permissions: ['domains.records.list'],
+			permissions: ['mysql.databases.list'],
 		},
 
 		find: {
 			rest: "GET /find",
-			permissions: ['domains.records.find'],
+			permissions: ['mysql.databases.find'],
 		},
 
 		count: {
 			rest: "GET /count",
-			permissions: ['domains.records.count'],
+			permissions: ['mysql.databases.count'],
 		},
 
 		get: {
 			needEntity: true,
-			permissions: ['domains.records.get']
+			permissions: ['mysql.databases.get']
 		},
 
 		update: {
 			needEntity: true,
-			permissions: ['domains.records.update']
+			permissions: ['mysql.databases.update']
 		},
 
 		replace: false,
 
 		remove: {
 			needEntity: true,
-			permissions: ['domains.records.remove']
+			permissions: ['mysql.databases.remove']
 		},
-		getDatabase: {
+		//get database stats from mysql
+		databaseStats: {
+			rest: "GET /:id/stats",
+			permissions: ['mysql.databases.stats'],
 			params: {
-				server: { type: "string", min: 3, optional: false },
-				name: { type: "string", min: 3, optional: false },
+				id: { type: "string" }
 			},
-			permissions: ['teams.create'],
 			async handler(ctx) {
-				const params = Object.assign({}, ctx.params);
-				return this.findEntity(null, {
-					query: {
-						...params
-					}
-				})
+				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
+				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
+				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				return this.execQuery(server, `SELECT table_schema "database", SUM(data_length + index_length) / 1024 / 1024 "size" FROM information_schema.TABLES WHERE table_schema = '${database.name}' GROUP BY table_schema;`);
+			},
+		},
+		//get database tables from mysql
+		databaseTables: {
+			rest: "GET /:id/tables",
+			permissions: ['mysql.databases.tables'],
+			params: {
+				id: { type: "string" }
+			},
+			async handler(ctx) {
+				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
+				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
+				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				return this.execQuery(server, `SELECT table_name FROM information_schema.tables WHERE table_schema = '${database.name}';`);
+			}
+		},
+		//get connection count from mysql for database
+		databaseConnections: {
+			rest: "GET /:id/connections",
+			permissions: ['mysql.databases.connections'],
+			params: {
+				id: { type: "string" }
+			},
+			async handler(ctx) {
+				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
+				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
+				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				return this.execQuery(server, `SELECT COUNT(*) FROM information_schema.processlist WHERE DB = '${database.name}';`);
 			}
 		},
 	},
@@ -114,62 +149,29 @@ module.exports = {
 	 * Events
 	 */
 	events: {
-
-
+		// create database on server
 		async "mysql.databases.created"(ctx) {
 			const database = ctx.params.data;
 
 			const server = await ctx.call('v1.mysql.servers.resolve', {
 				id: database.server
-			})
-			console.log(database, server)
-
-			var connection = mysql.createConnection({
-				host: server.hostname,
-				port: server.port,
-				user: 'root',
-				password: server.password
 			});
 
-			connection.connect();
+			await this.createMYSQLDatabase(server, database.name);
 
-			return new Promise((resolve, reject) => {
-
-				connection.query(`CREATE DATABASE ${database.name};`, function (error, results, fields) {
-					console.log(error, results, fields)
-					if (error) reject(error);
-					else resolve(database);
-				});
-				connection.end();
-			})
+			this.logger.info(`Database ${database.name} created on server ${server.hostname}`)
 		},
-
+		// drop database on server
 		async "mysql.databases.removed"(ctx) {
 			const database = ctx.params.data;
 
 			const server = await ctx.call('v1.mysql.servers.resolve', {
 				id: database.server
-			})
-			console.log(database, server)
-
-			var connection = mysql.createConnection({
-				host: server.hostname,
-				port: server.port,
-				user: 'root',
-				password: server.password
 			});
 
-			connection.connect();
+			await this.dropMYSQLDatabase(server, database.name);
 
-			return new Promise((resolve, reject) => {
-
-				connection.query(`DROP DATABASE ${database.name}`, function (error, results, fields) {
-					if (error) return reject(error);
-					resolve(results)
-				});
-
-				connection.end();
-			})
+			this.logger.info(`Database ${database.name} dropped on server ${server.hostname}`)
 		},
 	},
 

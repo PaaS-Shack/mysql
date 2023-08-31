@@ -2,7 +2,8 @@
 const DbService = require("db-mixin");
 const ConfigLoader = require("config-mixin");
 const { MoleculerClientError } = require("moleculer").Errors;
-const mysql = require('mysql2');
+
+const MYSQLMixin = require('./mixins/mysql.mixins');
 /**
  * attachments of addons service
  */
@@ -12,7 +13,8 @@ module.exports = {
 
     mixins: [
         DbService({}),
-        ConfigLoader(['mysql.**'])
+        ConfigLoader(['mysql.**']),
+        MYSQLMixin
     ],
 
     /**
@@ -29,19 +31,32 @@ module.exports = {
         rest: true,
 
         fields: {
+            server: {
+                type: "string",
+                required: true,
+                empty: false,
+                populate: {
+                    action: "v1.mysql.servers.resolve",
+                },
+            },
             database: {
                 type: "string",
                 required: true,
                 empty: false,
-
                 populate: {
                     action: "v1.mysql.databases.resolve",
-                    params: {
-                        //fields: ["id", "username", "fullName", "avatar"]
-                    }
                 },
             },
-
+            databases: {
+                type: "array",
+                items: 'string',
+                required: true,
+                empty: false,
+                default: [],
+                populate: {
+                    action: "v1.mysql.databases.resolve",
+                },
+            },
             username: {
                 type: "string",
                 required: true
@@ -65,47 +80,47 @@ module.exports = {
 
     actions: {
         create: {
-            permissions: ['domains.records.create'],
+            permissions: ['mysql.users.create'],
         },
         list: {
-            permissions: ['domains.records.list'],
+            permissions: ['mysql.users.list'],
         },
 
         find: {
             rest: "GET /find",
-            permissions: ['domains.records.find'],
+            permissions: ['mysql.users.find'],
         },
 
         count: {
             rest: "GET /count",
-            permissions: ['domains.records.count'],
+            permissions: ['mysql.users.count'],
         },
 
         get: {
             needEntity: true,
-            permissions: ['domains.records.get']
+            permissions: ['mysql.users.get']
         },
 
         update: {
             needEntity: true,
-            permissions: ['domains.records.update']
+            permissions: ['mysql.users.update']
         },
 
         replace: false,
 
         remove: {
             needEntity: true,
-            permissions: ['domains.records.remove']
+            permissions: ['mysql.users.remove']
         },
 
-
+        //create user and push to database id to user.databases
         getUser: {
             params: {
                 database: { type: "string", min: 3, optional: false },
                 username: { type: "string", min: 3, optional: false },
                 password: { type: "string", min: 3, optional: false },
             },
-            permissions: ['teams.create'],
+            permissions: ['mysql.users.create'],
             async handler(ctx) {
                 const params = Object.assign({}, ctx.params);
                 return this.findEntity(null, {
@@ -115,78 +130,137 @@ module.exports = {
                 })
             }
         },
+
+        //grant user to database and push to database id to user.databases
+        grantUser: {
+            params: {
+                database: { type: "string", min: 3, optional: false },
+                id: { type: "string", min: 3, optional: false },
+            },
+            permissions: ['mysql.users.grant'],
+            async handler(ctx) {
+                const params = Object.assign({}, ctx.params);
+                //find user by id
+                const user = await this.findEntity(null, {
+                    query: {
+                        id: params.id
+                    }
+                });
+
+                if (!user) throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
+
+                const database = await ctx.call('v1.mysql.databases.resolve', {
+                    id: params.database
+                });
+
+                if (!database) throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
+
+                const server = await ctx.call('v1.mysql.servers.resolve', {
+                    id: database.server
+                });
+
+                if (!server) throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
+
+                await this.grantMYSQLUser(server, user, database.name);
+
+                this.logger.info(`granted user to database ${database.name}`, user);
+
+                return this.updateEntity(null, {
+                    id: user.id,
+                    databases: [...user.databases, database.id]
+                });
+
+            }
+        },
+        //revoke user from database and remove database id from user.databases
+        revokeUser: {
+            params: {
+                database: { type: "string", min: 3, optional: false },
+                id: { type: "string", min: 3, optional: false },
+            },
+            permissions: ['mysql.users.revoke'],
+            async handler(ctx) {
+                const params = Object.assign({}, ctx.params);
+                const user = await this.findEntity(null, {
+                    query: {
+                        id: params.id
+                    }
+                });
+
+                if (!user) throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
+
+                const database = await ctx.call('v1.mysql.databases.resolve', {
+                    id: params.database
+                });
+
+                if (!database) throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
+
+                const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
+
+                if (!server) throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
+
+
+                await this.revokeMYSQLUser(server, user, database.name);
+
+                this.logger.info(`revoked user from database ${database.name}`, user);
+
+                return this.updateEntity(null, {
+                    id: user.id,
+                    databases: user.databases.filter(d => d !== database.id)
+                });
+
+            }
+        }
     },
 
     /**
      * Events
      */
     events: {
+        //find all users that have database in databases 
+        //and remove the database from their databases
+        //at this point the database is already removed from the database table
+        async "mysql.databases.removed"(ctx) {
+            const database = ctx.params.data;
 
+            const users = await this.findEntities(null, {
+                query: {
+                    databases: database.id
+                },
+                fields: ['id']
+            });
+
+            for (const user of users) {
+                //revoke user from database
+                await this.actions.revokeUser({
+                    id: user.id,
+                    database: database.id
+                })
+            }
+
+        },
+        //find all users that have database in databases
+        //and grant them access to the database
         async "mysql.users.created"(ctx) {
             const user = ctx.params.data;
 
-            const database = await ctx.call('v1.mysql.databases.resolve', {
-                id: user.database,
-                populate: ['server']
-            })
-
-
-            var connection = mysql.createConnection({
-                host: database.server.hostname,
-                port: database.server.port,
-                user: 'root',
-                password: database.server.password
+            const server = await ctx.call('v1.mysql.servers.resolve', {
+                id: user.server
             });
-
-            connection.connect();
-
-            return new Promise((resolve, reject) => {
-
-                connection.query(`CREATE USER '${user.username}'@'%' IDENTIFIED BY '${user.password}';`, function (error, results, fields) {
-                    console.log(error, results, fields)
-                    if (error) {
-                        reject(error);
-
-                        connection.end();
-                    } else {
-                        connection.query(`GRANT CREATE VIEW, ALTER, SHOW VIEW, CREATE, INSERT, SELECT, DELETE, TRIGGER, REFERENCES, UPDATE, DROP, INDEX on ${database.name}.* TO '${user.username}'@'%';`, function (error, results, fields) {
-                            console.log(error, results, fields)
-                            if (error) reject(error);
-                            else resolve(user);
-                            connection.end();
-                        });
-                    }
-                });
-            })
+            await this.createMYSQLUser(server, user);
+            this.logger.info(`created user on server ${server.id}`, user);
         },
+        //find all users that have database in databases
+        //and revoke their access to the database
         async "mysql.users.removed"(ctx) {
             const user = ctx.params.data;
 
-            const database = await ctx.call('v1.mysql.databases.resolve', {
-                id: user.database,
-                populate: ['server'],
-                scope: false
-            })
-
-
-            var connection = mysql.createConnection({
-                host: database.server.hostname,
-                port: database.server.port,
-                user: 'root',
-                password: database.server.password
+            const server = await ctx.call('v1.mysql.servers.resolve', {
+                id: user.server
             });
+            await this.dropMYSQLUser(server, user);
+            this.logger.info(`dropped user from server ${server.id}`, user);
 
-            connection.connect();
-
-            return new Promise((resolve, reject) => {
-
-                connection.query(`DROP USER ${user.username}`, function (error, results, fields) {
-                    if (error) reject(error);
-                    else resolve(results)
-                    connection.end();
-                });
-
-            })
         },
     },
 

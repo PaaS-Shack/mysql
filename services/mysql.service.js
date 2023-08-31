@@ -160,9 +160,13 @@ module.exports = {
 					server = await ctx.call('v1.mysql.servers.find', {}).then((res) => res.shift())
 				}
 
-
 				if (!server) {
-					throw new Error('NO MYSQL SERVER')
+					throw new MoleculerClientError(
+						`MYSQL server is not running`,
+						403,
+						"ERR_NO_CONTAINER_RUN",
+						{ server: params.server }
+					);
 				}
 
 
@@ -172,11 +176,12 @@ module.exports = {
 				});
 
 				const user = await ctx.call('v1.mysql.users.create', {
-					database: database.id,
+					server: server.id,
 					username,
 					password
 				});
-				return user
+
+				
 			}
 		},
 		deprovision: {
