@@ -107,9 +107,11 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
-				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				if (!database)
+					throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
 				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
-				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				if (!server)
+					throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
 				return this.execQuery(server, `SELECT table_schema "database", SUM(data_length + index_length) / 1024 / 1024 "size" FROM information_schema.TABLES WHERE table_schema = '${database.name}' GROUP BY table_schema;`);
 			},
 		},
@@ -122,9 +124,11 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
-				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				if (!database)
+					throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
 				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
-				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				if (!server)
+					throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
 				return this.execQuery(server, `SELECT table_name FROM information_schema.tables WHERE table_schema = '${database.name}';`);
 			}
 		},
@@ -137,9 +141,11 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const database = await ctx.call('v1.mysql.databases.resolve', { id: ctx.params.id });
-				if (!database) throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
+				if (!database)
+					throw new MoleculerClientError('Database not found', 404, 'DATABASE_NOT_FOUND', { id: ctx.params.id });
 				const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
-				if (!server) throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
+				if (!server)
+					throw new MoleculerClientError('Server not found', 404, 'SERVER_NOT_FOUND', { id: database.server });
 				return this.execQuery(server, `SELECT COUNT(*) FROM information_schema.processlist WHERE DB = '${database.name}';`);
 			}
 		},
