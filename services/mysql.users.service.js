@@ -147,19 +147,22 @@ module.exports = {
                     }
                 });
 
-                if (!user) throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
+                if (!user)
+                    throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
 
                 const database = await ctx.call('v1.mysql.databases.resolve', {
                     id: params.database
                 });
 
-                if (!database) throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
+                if (!database)
+                    throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
 
                 const server = await ctx.call('v1.mysql.servers.resolve', {
                     id: database.server
                 });
 
-                if (!server) throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
+                if (!server)
+                    throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
 
                 await this.grantMYSQLUser(server, user, database.name);
 
@@ -187,23 +190,27 @@ module.exports = {
                     }
                 });
 
-                if (!user) throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
+                if (!user)
+                    throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
 
                 const database = await ctx.call('v1.mysql.databases.resolve', {
                     id: params.database
                 });
 
-                if (!database) throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
+                if (!database)
+                    throw new MoleculerClientError("Database not found", 404, "DATABASE_NOT_FOUND");
 
                 const server = await ctx.call('v1.mysql.servers.resolve', { id: database.server });
 
-                if (!server) throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
+                if (!server)
+                    throw new MoleculerClientError("Server not found", 404, "SERVER_NOT_FOUND");
 
 
                 await this.revokeMYSQLUser(server, user, database.name);
 
                 this.logger.info(`revoked user from database ${database.name}`, user);
 
+                //remove database from user.databases array
                 return this.updateEntity(null, {
                     id: user.id,
                     databases: user.databases.filter(d => d !== database.id)
