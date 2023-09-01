@@ -242,7 +242,9 @@ module.exports = {
                 await this.actions.revokeUser({
                     id: user.id,
                     database: database.id
-                })
+                }).catch(err => {
+                    this.logger.error(err);
+                });
             }
 
         },
@@ -254,6 +256,7 @@ module.exports = {
             const server = await ctx.call('v1.mysql.servers.resolve', {
                 id: user.server
             });
+            //create new user on server
             await this.createMYSQLUser(server, user);
             this.logger.info(`created user on server ${server.id}`, user);
         },
@@ -265,9 +268,9 @@ module.exports = {
             const server = await ctx.call('v1.mysql.servers.resolve', {
                 id: user.server
             });
+            //drop user from server
             await this.dropMYSQLUser(server, user);
             this.logger.info(`dropped user from server ${server.id}`, user);
-
         },
     },
 
