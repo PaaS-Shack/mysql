@@ -30,16 +30,15 @@ module.exports = {
 	settings: {
 		rest: true,
 		fields: {
-			node: {
+			k8sCluster: {
 				type: "string",
-				required: false,
-				populate: {
-					action: "v1.nodes.resolve",
-					params: {
-						fields: ["id", "hostname"],
-						populate: ['node']
-					}
-				}
+				required: true,
+				empty: false,
+			},
+			namespace: {
+				type: "string",
+				required: true,
+				empty: false,
 			},
 			name: {
 				type: "string",
