@@ -188,12 +188,13 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
-
+				//find the server by id
 				const server = await this.findEntity(ctx, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
 
+				//execute the query on the server and return the result
 				return this.execQuery(server, `SHOW DATABASES;`);
 			}
 		},
@@ -353,32 +354,24 @@ module.exports = {
 					cluster: server.k8sCluster,
 					namespace: server.namespace,
 					name: `${server.name}-secrets`
-				}).then((secretResult) => {
-					this.logger.info(`deleted secret ${secretResult.metadata.name}`);
-				}).catch(err => {
-					this.logger.error(err);
 				});
+				this.logger.info(`deleted secret ${secretResult.metadata.name}`);
 
 				//delete the persistent volume claim
 				const persistentVolumeClaimResult = await ctx.call('v1.kube.deleteNamespacedPersistentVolumeClaim', {
 					cluster: server.k8sCluster,
 					namespace: server.namespace,
 					name: `${server.name}-pv-claim`
-				}).then((persistentVolumeClaimResult) => {
-					this.logger.info(`deleted persistent volume claim ${persistentVolumeClaimResult.metadata.name}`);
-				}).catch(err => {
-					this.logger.error(err);
 				});
+				this.logger.info(`deleted persistent volume claim ${persistentVolumeClaimResult.metadata.name}`);
+
 				//delete the service
 				const serviceResult = await ctx.call('v1.kube.deleteNamespacedService', {
 					cluster: server.k8sCluster,
 					namespace: server.namespace,
 					name: server.name
-				}).then((serviceResult) => {
-					this.logger.info(`deleted service ${serviceResult.metadata.name}`);
-				}).catch(err => {
-					this.logger.error(err);
 				});
+				this.logger.info(`deleted service ${serviceResult.metadata.name}`);
 
 				//delete the server from the database
 				const deletedServerID = await this.removeEntity(ctx, { id: params.id });
@@ -396,7 +389,6 @@ module.exports = {
 	 */
 	events: {
 		// on new deployment updated uid for fast lookup
-
 		async "kube.deployments.added"(ctx) {
 			const deploymant = ctx.params.data;
 
@@ -478,55 +470,43 @@ module.exports = {
 											memory: "256M",
 										},
 									},
-									env: [
-										{
-											name: "MYSQL_ROOT_PASSWORD",
-											valueFrom: {
-												secretKeyRef: {
-													name: `${server.name}-secrets`,
-													key: "ROOT_PASSWORD",
-												},
+									env: [{
+										name: "MYSQL_ROOT_PASSWORD",
+										valueFrom: {
+											secretKeyRef: {
+												name: `${server.name}-secrets`,
+												key: "ROOT_PASSWORD",
 											},
 										},
-									],
-									ports: [
-										{
-											containerPort: 3306,
-											name: "mysql",
-										},
-									],
-									volumeMounts: [
-										{
-											name: "config",
-											mountPath: "/etc/mysql/conf.d/",
-										},
-										{
-											name: "persistent-storage",
-											mountPath: "/var/lib/mysql",
-										},
-									],
+									}],
+									ports: [{
+										containerPort: 3306,
+										name: "mysql",
+									}],
+									volumeMounts: [{
+										name: "config",
+										mountPath: "/etc/mysql/conf.d/",
+									}, {
+										name: "persistent-storage",
+										mountPath: "/var/lib/mysql",
+									}],
 								},
 							],
-							volumes: [
-								{
-									name: "config",
-									configMap: {
-										name: `${server.name}-config`,
-										items: [
-											{
-												key: "mysql.cnf",
-												path: "mysql.cnf",
-											},
-										],
-									},
+							volumes: [{
+								name: "config",
+								configMap: {
+									name: `${server.name}-config`,
+									items: [{
+										key: "mysql.cnf",
+										path: "mysql.cnf",
+									}],
 								},
-								{
-									name: "persistent-storage",
-									persistentVolumeClaim: {
-										claimName: `${server.name}-pv-claim`,
-									},
+							}, {
+								name: "persistent-storage",
+								persistentVolumeClaim: {
+									claimName: `${server.name}-pv-claim`,
 								},
-							],
+							}],
 						},
 					},
 				},
@@ -601,11 +581,10 @@ module.exports = {
 					},
 				},
 				data: {
-					"mysql.cnf": `
-			  # Apply this config only on the leader.
-			  [mysqld]
-			  sql_mode="NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
-				  `,
+					"mysql.cnf": `# Apply this config only on the leader.
+[mysqld]
+sql_mode="NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
+`,
 				},
 			};
 			return configMapObject;
@@ -661,6 +640,7 @@ module.exports = {
 			return serviceObject;
 		},
 		generateServerName() {
+			//generate a random name for the server
 			const adjectives = ["Red", "Blue", "Green", "Yellow", "Silver", "Golden", "Crimson", "Azure"];
 			const nouns = ["Dragon", "Phoenix", "Sphinx", "Centaur", "Minotaur", "Griffin", "Basilisk", "Kraken"];
 
@@ -669,6 +649,8 @@ module.exports = {
 			return `${randomAdjective}-${randomNoun}`;
 		},
 		generatePassword() {
+			//password must be 10 characters long and 
+			//contain at least one number and one symbol
 			return generator.generate({
 				length: 10,
 				numbers: true,
