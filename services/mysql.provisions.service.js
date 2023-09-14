@@ -1,7 +1,7 @@
 "use strict";
 const DbService = require("db-mixin");
 const ConfigLoader = require("config-mixin");
-const MemeberShipMinxin = require('membership-mixin')
+const Membership = require('membership-mixin')
 const { MoleculerClientError } = require("moleculer").Errors;
 const MYSQLMixin = require('../mixins/mysql.mixins');
 const generator = require('generate-password');
@@ -14,7 +14,9 @@ module.exports = {
 	version: 1,
 
 	mixins: [
-		DbService({}),
+		DbService({
+			permissions: 'mysql.provisions'
+		}),
 		ConfigLoader(['mysql.**']),
 		Membership({
 			permissions: 'mysql.provisions'
@@ -106,7 +108,7 @@ module.exports = {
 		replace: false,
 
 		remove: {
-			rest:false,
+			rest: false,
 			needEntity: true,
 			permissions: ['mysql.provisions.remove']
 		},
@@ -122,7 +124,7 @@ module.exports = {
 				const params = Object.assign({}, ctx.params);
 
 				const server = await this.searchAvailableServer(ctx, params);
-				
+
 				//create provisioned database and user
 				const database = await ctx.call('v1.mysql.databases.create', {
 					server: server.id,
