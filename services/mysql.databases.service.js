@@ -4,7 +4,7 @@ const ConfigLoader = require("config-mixin");
 const { MoleculerClientError } = require("moleculer").Errors;
 
 
-const MYSQLMixin = require('./mixins/mysql.mixins');
+const MYSQLMixin = require('../mixins/mysql.mixins');
 
 /**
  * mysql databases service for managing mysql databases
