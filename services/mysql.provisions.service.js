@@ -3,7 +3,7 @@ const DbService = require("db-mixin");
 const ConfigLoader = require("config-mixin");
 const MemeberShipMinxin = require('membership-mixin')
 const { MoleculerClientError } = require("moleculer").Errors;
-const MYSQLMixin = require('./mixins/mysql.mixins');
+const MYSQLMixin = require('../mixins/mysql.mixins');
 const generator = require('generate-password');
 
 /**
