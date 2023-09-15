@@ -132,7 +132,7 @@ module.exports = {
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 
-				const server = await this.findEntity(ctx, { query: { id: params.id } });
+				const server = await this.findEntity(null, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
@@ -151,7 +151,7 @@ module.exports = {
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 
-				const server = await this.findEntity(ctx, { query: { id: params.id } });
+				const server = await this.findEntity(null, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
@@ -170,7 +170,7 @@ module.exports = {
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 
-				const server = await this.findEntity(ctx, { query: { id: params.id } });
+				const server = await this.findEntity(null, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
@@ -189,7 +189,7 @@ module.exports = {
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 				//find the server by id
-				const server = await this.findEntity(ctx, { query: { id: params.id } });
+				const server = await this.findEntity(null, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
@@ -209,7 +209,7 @@ module.exports = {
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 
-				const server = await this.findEntity(ctx, { query: { id: params.id } });
+				const server = await this.findEntity(null, { query: { id: params.id } });
 
 				if (!server)
 					throw new MoleculerClientError("Server not found", 404);
