@@ -116,7 +116,7 @@ module.exports = {
 				// create user
 				const user = await ctx.call('v1.mysql.users.create', {
 					server: server.id,
-					database: database.id,
+					databases: [database.id],
 					username: this.generatePrefixName(params),
 					password: generator.generate({
 						length: 10,
