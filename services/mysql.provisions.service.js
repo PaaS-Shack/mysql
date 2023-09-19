@@ -162,6 +162,30 @@ module.exports = {
 				return provision.id;
 			}
 		},
+
+		pack: {
+			params: {
+				id: { type: "string", min: 3, optional: false },
+			},
+			permissions: ['teams.create'],
+			async handler(ctx) {
+				const params = Object.assign({}, ctx.params);
+
+				const { server, database, user } = await ctx.call('v1.mysql.provisions.get', {
+					id: params.id,
+					populate: ['server', 'database', 'user']
+				});
+
+				return {
+					MYSQL_USERNAME: user.username,
+					MYSQL_PASSWORD: user.password,
+					MYSQL_DATABASE: database.name,
+					MYSQL_HOST: server.hostname,
+					MYSQL_PORT: `${server.port}`,
+					MYSQL_URI: `mysql://${user.username}:${user.password}@${server.hostname}:${server.port}/${database.name}`
+				};
+			}
+		},
 		//deprovision a database and user for a server and remove a provision entry
 		deprovision: {
 			rest: "DELETE /:id",
