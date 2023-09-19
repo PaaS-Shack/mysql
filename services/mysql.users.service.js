@@ -95,7 +95,7 @@ module.exports = {
      */
 
     actions: {
-        
+
 
         //create user and push to database id to user.databases
         getUser: {
@@ -125,11 +125,7 @@ module.exports = {
             async handler(ctx) {
                 const params = Object.assign({}, ctx.params);
                 //find user by id
-                const user = await this.findEntity(null, {
-                    query: {
-                        id: params.id
-                    }
-                });
+                const user = await ctx.call('v1.mysql.users.get', { id: params.id })
 
                 if (!user)
                     throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
@@ -168,11 +164,7 @@ module.exports = {
             permissions: ['mysql.users.revoke'],
             async handler(ctx) {
                 const params = Object.assign({}, ctx.params);
-                const user = await this.findEntity(null, {
-                    query: {
-                        id: params.id
-                    }
-                });
+                const user = await ctx.call('v1.mysql.users.get', { id: params.id })
 
                 if (!user)
                     throw new MoleculerClientError("User not found", 404, "USER_NOT_FOUND");
@@ -223,7 +215,7 @@ module.exports = {
 
             for (const user of users) {
                 //revoke user from database
-                await this.actions.revokeUser({
+                await this.actions.revoke({
                     id: user.id,
                     database: database.id
                 }).catch(err => {
