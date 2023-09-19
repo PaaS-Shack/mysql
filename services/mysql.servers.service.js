@@ -13,7 +13,9 @@ module.exports = {
 	version: 1,
 
 	mixins: [
-		DbService({}),
+		DbService({
+			permissions: 'mysql.servers'
+		}),
 		ConfigLoader(['mysql.**']),
 		MYSQLMixin
 	],
@@ -73,13 +75,26 @@ module.exports = {
 				required: false
 			},
 
+			...DbService.FIELDS,// inject dbservice fields
 		},
 
+		// default database populates
+		defaultPopulates: [],
+
+		// database scopes
 		scopes: {
-
+			...DbService.SCOPE,// inject dbservice scope
 		},
 
-		defaultScopes: []
+		// default database scope
+		defaultScopes: [
+			...DbService.DSCOPE,// inject dbservice dscope
+		],
+
+		// default init config settings
+		config: {
+
+		}
 	},
 
 	/**
@@ -87,39 +102,7 @@ module.exports = {
 	 */
 
 	actions: {
-		create: {
-			permissions: ['mysql.servicers.create'],
-		},
-		list: {
-			permissions: ['mysql.servicers.list'],
-		},
 
-		find: {
-			rest: "GET /find",
-			permissions: ['mysql.servicers.find'],
-		},
-
-		count: {
-			rest: "GET /count",
-			permissions: ['mysql.servicers.count'],
-		},
-
-		get: {
-			needEntity: true,
-			permissions: ['mysql.servicers.get']
-		},
-
-		update: {
-			needEntity: true,
-			permissions: ['mysql.servicers.update']
-		},
-
-		replace: false,
-
-		remove: {
-			needEntity: true,
-			permissions: ['mysql.servicers.remove']
-		},
 
 		//show server status
 		//https://dev.mysql.com/doc/refman/8.0/en/show-status.html

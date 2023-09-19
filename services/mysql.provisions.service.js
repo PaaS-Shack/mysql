@@ -62,13 +62,29 @@ module.exports = {
 				},
 			},
 
+			...DbService.FIELDS,// inject dbservice fields
+			...Membership.FIELDS,// inject membership fields
 		},
 
+		// default database populates
+		defaultPopulates: [],
+
+		// database scopes
 		scopes: {
-
+			...DbService.SCOPE,// inject dbservice scope
+			...Membership.SCOPE,// inject membership scope
 		},
 
-		defaultScopes: []
+		// default database scope
+		defaultScopes: [
+			...DbService.DSCOPE,// inject dbservice dscope
+			...Membership.DSCOPE,// inject membership dscope
+		],
+
+		// default init config settings
+		config: {
+
+		}
 	},
 
 	/**
@@ -76,42 +92,7 @@ module.exports = {
 	 */
 
 	actions: {
-		create: {
-			rest: false,
-			permissions: ['mysql.provisions.create'],
-		},
-		list: {
-			permissions: ['mysql.provisions.list'],
-		},
 
-		find: {
-			rest: "GET /find",
-			permissions: ['mysql.provisions.find'],
-		},
-
-		count: {
-			rest: "GET /count",
-			permissions: ['mysql.provisions.count'],
-		},
-
-		get: {
-			needEntity: true,
-			permissions: ['mysql.provisions.get']
-		},
-
-		update: {
-			rest: false,
-			needEntity: true,
-			permissions: ['mysql.provisions.update']
-		},
-
-		replace: false,
-
-		remove: {
-			rest: false,
-			needEntity: true,
-			permissions: ['mysql.provisions.remove']
-		},
 		//provision a database and user for a server and create a provision entry
 		provision: {
 			rest: "POST /",
@@ -135,6 +116,7 @@ module.exports = {
 				// create user
 				const user = await ctx.call('v1.mysql.users.create', {
 					server: server.id,
+					database: database.id,
 					username: this.generatePrefixName(params),
 					password: generator.generate({
 						length: 10,
@@ -280,14 +262,15 @@ module.exports = {
 			})
 			return `${params.prefix}_${code}`;
 		},
-		searchAvailableServer(ctx, { zone }) {
+		async searchAvailableServer(ctx, { zone }) {
 			//search for available server in zone
-			const zoneServers = ctx.call('v1.mysql.servers.find', { query: { zone } });
+			const zoneServers = await ctx.call('v1.mysql.servers.find', { query: { zone } });
 			if (zoneServers.length > 0) {
 				return zoneServers[0];
 			}
 			//search for available server in all zones
-			const servers = ctx.call('v1.mysql.servers.find', {});
+			const servers = await ctx.call('v1.mysql.servers.find', {});
+			console.log(servers)
 			if (servers.length > 0) {
 				return servers[0];
 			}

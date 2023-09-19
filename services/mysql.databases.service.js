@@ -15,7 +15,9 @@ module.exports = {
 	version: 1,
 
 	mixins: [
-		DbService({}),
+		DbService({
+			permissions: "mysql.databases"
+		}),
 		ConfigLoader(['mysql.**']),
 		MYSQLMixin
 	],
@@ -51,13 +53,28 @@ module.exports = {
 				type: "number",
 				default: 10
 			},
-		},
 
-		scopes: {
+			
+            ...DbService.FIELDS,// inject dbservice fields
+        },
 
-		},
+        // default database populates
+        defaultPopulates: [],
 
-		defaultScopes: []
+        // database scopes
+        scopes: {
+            ...DbService.SCOPE,// inject dbservice scope
+        },
+
+        // default database scope
+        defaultScopes: [
+            ...DbService.DSCOPE,// inject dbservice dscope
+        ],
+
+        // default init config settings
+        config: {
+
+        }
 	},
 
 	/**
@@ -65,39 +82,7 @@ module.exports = {
 	 */
 
 	actions: {
-		create: {
-			permissions: ['mysql.databases.create'],
-		},
-		list: {
-			permissions: ['mysql.databases.list'],
-		},
 
-		find: {
-			rest: "GET /find",
-			permissions: ['mysql.databases.find'],
-		},
-
-		count: {
-			rest: "GET /count",
-			permissions: ['mysql.databases.count'],
-		},
-
-		get: {
-			needEntity: true,
-			permissions: ['mysql.databases.get']
-		},
-
-		update: {
-			needEntity: true,
-			permissions: ['mysql.databases.update']
-		},
-
-		replace: false,
-
-		remove: {
-			needEntity: true,
-			permissions: ['mysql.databases.remove']
-		},
 		//get database stats from mysql
 		databaseStats: {
 			rest: "GET /:id/stats",

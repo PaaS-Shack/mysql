@@ -12,7 +12,9 @@ module.exports = {
     version: 1,
 
     mixins: [
-        DbService({}),
+        DbService({
+            permissions: 'mysql.users'
+        }),
         ConfigLoader(['mysql.**']),
         MYSQLMixin
     ],
@@ -65,13 +67,27 @@ module.exports = {
                 type: "string",
                 required: true
             },
+
+            ...DbService.FIELDS,// inject dbservice fields
         },
 
+        // default database populates
+        defaultPopulates: [],
+
+        // database scopes
         scopes: {
-
+            ...DbService.SCOPE,// inject dbservice scope
         },
 
-        defaultScopes: []
+        // default database scope
+        defaultScopes: [
+            ...DbService.DSCOPE,// inject dbservice dscope
+        ],
+
+        // default init config settings
+        config: {
+
+        }
     },
 
     /**
@@ -79,39 +95,7 @@ module.exports = {
      */
 
     actions: {
-        create: {
-            permissions: ['mysql.users.create'],
-        },
-        list: {
-            permissions: ['mysql.users.list'],
-        },
-
-        find: {
-            rest: "GET /find",
-            permissions: ['mysql.users.find'],
-        },
-
-        count: {
-            rest: "GET /count",
-            permissions: ['mysql.users.count'],
-        },
-
-        get: {
-            needEntity: true,
-            permissions: ['mysql.users.get']
-        },
-
-        update: {
-            needEntity: true,
-            permissions: ['mysql.users.update']
-        },
-
-        replace: false,
-
-        remove: {
-            needEntity: true,
-            permissions: ['mysql.users.remove']
-        },
+        
 
         //create user and push to database id to user.databases
         getUser: {
