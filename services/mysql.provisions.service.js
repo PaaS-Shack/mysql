@@ -167,7 +167,7 @@ module.exports = {
 			params: {
 				id: { type: "string", min: 3, optional: false },
 			},
-			permissions: ['teams.create'],
+			permissions: ['mtsql.provisions.pack'],
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
 
