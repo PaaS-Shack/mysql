@@ -116,7 +116,7 @@ module.exports = {
         },
 
         //grant user to database and push to database id to user.databases
-        grantUser: {
+        grant: {
             params: {
                 database: { type: "string", min: 3, optional: false },
                 id: { type: "string", min: 3, optional: false },
@@ -160,7 +160,7 @@ module.exports = {
             }
         },
         //revoke user from database and remove database id from user.databases
-        revokeUser: {
+        revoke: {
             params: {
                 database: { type: "string", min: 3, optional: false },
                 id: { type: "string", min: 3, optional: false },
