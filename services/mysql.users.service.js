@@ -43,7 +43,7 @@ module.exports = {
             },
             database: {
                 type: "string",
-                required: true,
+                required: false,
                 empty: false,
                 populate: {
                     action: "v1.mysql.databases.resolve",
