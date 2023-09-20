@@ -141,7 +141,7 @@ module.exports = {
 				});
 				this.logger.info(`User granted ${user.id} to ${database.id} for provision ${provision.id}`);
 
-				return provision.id;
+				return provision;
 			}
 		},
 
