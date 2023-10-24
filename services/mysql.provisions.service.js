@@ -43,6 +43,7 @@ module.exports = {
 				empty: false,
 				populate: {
 					action: "v1.mysql.servers.resolve",
+					fields: ['id', 'hostname', 'port', 'zone']
 				},
 			},
 			database: {
@@ -116,7 +117,7 @@ module.exports = {
 				// create user
 				const user = await ctx.call('v1.mysql.users.create', {
 					server: server.id,
-					databases: [database.id],
+					databases: [],
 					username: this.generatePrefixName(params),
 					password: generator.generate({
 						length: 10,
@@ -146,7 +147,7 @@ module.exports = {
 		},
 
 		pack: {
-			rest:{
+			rest: {
 				method: "GET",
 				path: "/:id/pack",
 			},
@@ -184,12 +185,10 @@ module.exports = {
 
 				this.logger.info(`Deprovisioning ${params.id}`);
 
-				const provision = await this.findEntity(null, {
-					query: {
-						id: params.id
-					}
+				const provision = await this.resolveEntities(ctx, {
+					id: params.id
 				});
-
+				console.log(params.id, provision.id)
 				if (!provision)
 					throw new MoleculerClientError('Provision not found', 404, 'PROVISION_NOT_FOUND');
 
@@ -246,6 +245,20 @@ module.exports = {
 					this.logger.info(`Provision removed ${id}`);
 					return id;
 				});
+			}
+		},
+
+		clean: {
+			async handler(ctx) {
+				const entities = await this.findEntities(null, {
+
+				})
+				console.log(entities)
+				return Promise.allSettled(entities.map((entity) =>
+					this.removeEntity(ctx, {
+						id: entity.id,
+						scope: false
+					})))
 			}
 		},
 	},

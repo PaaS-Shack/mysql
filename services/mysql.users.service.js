@@ -193,7 +193,22 @@ module.exports = {
                 });
 
             }
-        }
+        },
+
+
+		clean: {
+			async handler(ctx) {
+				const entities = await this.findEntities(null, {
+					
+				})
+				console.log(entities)
+				return Promise.allSettled(entities.map((entity) =>
+					this.removeEntity(ctx, {
+						id: entity.id,
+						scope: false
+					})))
+			}
+		},
     },
 
     /**
