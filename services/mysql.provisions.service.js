@@ -95,7 +95,7 @@ module.exports = {
 
 		//provision a database and user for a server and create a provision entry
 		provision: {
-			rest: "POST /",
+			rest: "POST /provision",
 			permissions: ['mysql.provisions.provision'],
 			params: {
 				zone: { type: "string", optional: true },
@@ -146,6 +146,10 @@ module.exports = {
 		},
 
 		pack: {
+			rest:{
+				method: "GET",
+				path: "/:id/pack",
+			},
 			params: {
 				id: { type: "string", min: 3, optional: false },
 			},
@@ -170,10 +174,10 @@ module.exports = {
 		},
 		//deprovision a database and user for a server and remove a provision entry
 		deprovision: {
-			rest: "DELETE /:id",
+			rest: "DELETE /:id/deprovision",
 			permissions: ['mysql.provisions.deprovision'],
 			params: {
-				id: { type: "string", optional: true },
+				id: { type: "string", optional: false },
 			},
 			async handler(ctx) {
 				const params = Object.assign({}, ctx.params);
