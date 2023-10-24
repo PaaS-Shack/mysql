@@ -184,7 +184,7 @@ module.exports = {
 
 				this.logger.info(`Deprovisioning ${params.id}`);
 
-				const provision = await this.findEntity(ctx, {
+				const provision = await this.findEntity(null, {
 					query: {
 						id: params.id
 					}
