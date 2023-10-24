@@ -222,6 +222,8 @@ module.exports = {
 				await ctx.call('v1.mysql.users.revoke', {
 					database: database.id,
 					id: user.id,
+				}).catch((err) => {
+					this.logger.error(err);
 				});
 
 				//remove database
