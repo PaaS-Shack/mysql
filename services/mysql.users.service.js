@@ -41,19 +41,10 @@ module.exports = {
                     action: "v1.mysql.servers.resolve",
                 },
             },
-            database: {
-                type: "string",
-                required: false,
-                empty: false,
-                populate: {
-                    action: "v1.mysql.databases.resolve",
-                },
-            },
             databases: {
                 type: "array",
                 items: 'string',
-                required: true,
-                empty: false,
+                required: false,
                 default: [],
                 populate: {
                     action: "v1.mysql.databases.resolve",
