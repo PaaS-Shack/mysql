@@ -238,8 +238,10 @@ module.exports = {
             const server = await ctx.call('v1.mysql.servers.resolve', {
                 id: user.server
             });
+
             //create new user on server
             await this.createMYSQLUser(server, user);
+
             this.logger.info(`created user on server ${server.id}`, user);
         },
         //find all users that have database in databases
@@ -250,8 +252,10 @@ module.exports = {
             const server = await ctx.call('v1.mysql.servers.resolve', {
                 id: user.server
             });
+            
             //drop user from server
             await this.dropMYSQLUser(server, user);
+
             this.logger.info(`dropped user from server ${server.id}`, user);
         },
     },

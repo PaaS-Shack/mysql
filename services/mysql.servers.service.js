@@ -32,6 +32,7 @@ module.exports = {
 	 */
 	settings: {
 		rest: true,
+		
 		fields: {
 			k8sCluster: {
 				type: "string",
