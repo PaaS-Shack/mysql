@@ -588,6 +588,12 @@ sql_mode="NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 			return secretObject;
 		},
 		createPersistentVolumeClaim(server) {
+
+			let storageClassName = undefined;
+			if (this.config["mysql.servers.storageClassName"]){
+				storageClassName = this.config["mysql.servers.storageClassName"];
+			}
+
 			const persistentVolumeClaimObject = {
 				apiVersion: "v1",
 				kind: "PersistentVolumeClaim",
@@ -595,6 +601,7 @@ sql_mode="NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"
 					name: `${server.name}-pv-claim`,
 				},
 				spec: {
+					storageClassName: storageClassName,
 					accessModes: ["ReadWriteOnce"],
 					resources: {
 						requests: {
