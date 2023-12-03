@@ -495,6 +495,8 @@ module.exports = {
 					},
 				},
 			}
+
+			return deploymentObject;
 		},
 
 		livnessProbe(server) {
