@@ -374,14 +374,14 @@ module.exports = {
 	events: {
 		// on new deployment updated uid for fast lookup
 		async "kube.deployments.added"(ctx) {
-			const deploymant = ctx.params.data;
+			const deploymant = ctx.params;
 
 			//check if the deployment name, namespace and cluster match a server
 			const server = await this.findEntity(ctx, {
 				query: {
 					name: deploymant.metadata.name,
 					namespace: deploymant.metadata.namespace,
-					k8sCluster: ctx.params.cluster
+					k8sCluster: deploymant.cluster
 				}
 			});
 
