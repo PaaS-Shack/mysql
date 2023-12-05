@@ -46,7 +46,7 @@ module.exports = {
 			},
 			uid: {
 				type: "string",
-				required: true,
+				required: false,
 				empty: false,
 			},
 			name: {
@@ -60,7 +60,8 @@ module.exports = {
 			},
 			port: {
 				type: "number",
-				required: false
+				required: false,
+				default: 3306
 			},
 			username: {
 				type: "string",
